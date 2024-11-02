@@ -16,6 +16,11 @@ public final class Cart {
         this.lineItems = new ArrayList<>();
     }
 
+    public Cart(CartId id, List<LineItem> lineItems) {
+        this.id = Objects.requireNonNull(id, "id must not be null");
+        this.lineItems = Objects.requireNonNull(lineItems, "lineItems must not be null");
+    }
+
     public CartId getId() {
         return id;
     }

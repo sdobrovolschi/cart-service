@@ -1,0 +1,10 @@
+cart:
+  - id: fe5cea5a-71ce-44cd-9b7a-1aba11dc5a91
+  - id: 3889e913-a326-4e38-bf87-9e3088432ac5
+line_item:
+  - id: 130eee25-32ac-4240-a255-e7bdcb0b4e14
+    cart_id: 3889e913-a326-4e38-bf87-9e3088432ac5
+    product_id: 1300b3d4-fb5a-441c-92ef-c5a11e20e089
+    product_price_amount: 125.75
+    product_price_currency: EUR
+    quantity: 3
