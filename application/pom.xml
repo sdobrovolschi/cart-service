@@ -12,4 +12,12 @@
     <artifactId>cart-service-application</artifactId>
     <name>application</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.javamoney</groupId>
+            <artifactId>moneta</artifactId>
+            <version>1.4.4</version>
+            <type>pom</type>
+        </dependency>
+    </dependencies>
 </project>
