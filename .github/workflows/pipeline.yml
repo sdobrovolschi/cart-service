@@ -1,0 +1,105 @@
+name: pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.short-sha.outputs.sha }}
+    permissions:
+      packages: write
+#    container: eclipse-temurin:21.0.4_7-jdk
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - uses: benjlevesque/short-sha@v3.0
+        id: short-sha
+      - name: Set up Java 21
+        uses: actions/setup-java@v4.5.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Build and push
+        run: |
+          ./mvnw install && ./mvnw -pl infrastructure/bootstrap jib:build \
+          -Djib.from.auth.username=${{ github.actor }} \
+          -Djib.from.auth.password=${{ secrets.GITHUB_TOKEN }} \
+          -Djib.to.image=ghcr.io/sdobrovolschi/containers/cart-service:${{ env.SHA }} \
+          -Djib.to.auth.username=${{ github.actor }} \
+          -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}
+  system-test:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: staging
+    outputs:
+      pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+    steps:
+      - name: Check out the config repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT }}
+          repository: sdobrovolschi/gitops-argo
+      - name: Change version
+        uses: mikefarah/yq@v4
+        with:
+          cmd: yq -i '.image.tag = "${{ needs.build.outputs.sha }}"' envs/prod/cart-service/version.yaml
+      - name: Create PR
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.PAT }}
+          branch: "cart-service-${{ needs.build.outputs.sha }}"
+          base: "main"
+          title: "bump cart-service to ${{ needs.build.outputs.sha }}"
+          commit-message: "bump cart-service to ${{ needs.build.outputs.sha }}"
+          delete-branch: true
+      - name: Wait commit status
+        uses: cloudposse/github-action-wait-commit-status@0.2.0
+        with:
+          repository: sdobrovolschi/gitops-argo
+          sha: ${{ steps.cpr.outputs.pull-request-head-sha }}
+          status: "continuous-delivery/cart-service-cart-service-${{ needs.build.outputs.sha }}"
+          expected_state: "success"
+          check-timeout: 300 # 5 min
+          check-retry-count: 30
+          check-retry-interval: 20
+      - name: Check out the system tests repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT }}
+          repository: sdobrovolschi/devconf-system-tests
+      - name: Set up Java 21
+        uses: actions/setup-java@v4.5.0
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Execute test suite
+        run: |
+          ./mvnw clean test
+  deploy:
+    needs: system-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Merge PR
+        id: mpr
+        uses: juliangruber/merge-pull-request-action@v1.3.1
+        with:
+          github-token: ${{ secrets.PAT }}
+          repo: sdobrovolschi/gitops-argo
+          number: ${{ needs.system-test.outputs.pull-request-number }}
+          method: "rebase"
+      - name: Wait commit status
+        uses: cloudposse/github-action-wait-commit-status@0.2.0
+        with:
+          repository: sdobrovolschi/gitops-argo
+          sha: ${{ steps.mpr.outputs.commit }}
+          status: continuous-delivery/cart-service
+          expected_state: "success"
+          check-timeout: 300 # 5 min
+          check-retry-count: 30
+          check-retry-interval: 20
