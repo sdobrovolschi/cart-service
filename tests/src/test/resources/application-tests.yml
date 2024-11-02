@@ -1,0 +1,6 @@
+pactbroker:
+  url: https://sdobrovolschi.pactflow.io
+  auth:
+    token: t62J83OXET1ZX1vCymTeQA
+  consumerversionselectors:
+    tags: master

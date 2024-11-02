@@ -1,0 +1,14 @@
+embedded:
+  postgresql:
+    docker-image: postgres:13.4-alpine3.14
+    database: carts
+    user: admin
+    password: 1234
+  service:
+    docker-image: cart-service:0.0.1-SNAPSHOT
+    env:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${embedded.postgresql.networkAlias}:${embedded.postgresql.internalPort}/${embedded.postgresql.schema}
+      SPRING_DATASOURCE_USERNAME: ${embedded.postgresql.user}
+      SPRING_DATASOURCE_PASSWORD: ${embedded.postgresql.password}
+      SPRING_FLYWAY_USER: ${embedded.postgresql.user}
+      SPRING_FLYWAY_PASSWORD: ${embedded.postgresql.password}

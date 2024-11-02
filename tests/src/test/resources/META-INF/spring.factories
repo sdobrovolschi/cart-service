@@ -1,0 +1,5 @@
+org.springframework.boot.SpringApplicationRunListener=\
+  com.example.image.ImageBuilderTestExecutionListener
+org.springframework.cloud.bootstrap.BootstrapConfiguration=\
+  com.playtika.testcontainer.postgresql.EmbeddedPostgreSQLBootstrapConfiguration,\
+  com.example.testcontainers.EmbeddedServiceBootstrapConfiguration
